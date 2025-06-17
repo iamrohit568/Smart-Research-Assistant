@@ -8,3 +8,5 @@ public class ResearchRequest {
     private String operation;
 
 }
+
+

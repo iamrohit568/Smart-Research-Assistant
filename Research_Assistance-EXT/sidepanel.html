@@ -6,24 +6,55 @@
     <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>Research Assistant</h2>
+    <!-- Login Screen (only this is shown at startup) -->
+    <div class="login-screen" id="loginScreen">
+        <div class="logo">
+            <h1>🔬 Research Assistant</h1>
+            <p>AI-powered research made simple</p>
         </div>
 
-        <div class="actions">
-            <button id="summarizeBtn">Summarize</button>
-            <button id="similarBtn">Similar Research</button>
-        </div>
+        <div class="alert" id="loginAlert"></div>
+        <div class="loading" id="loginLoading"></div>
 
-        <div class="notes">
-            <h3>Research Notes</h3>
-            <textarea id="notes" placeholder="Take notes here"></textarea>
-            <button id="saveNotesBtn">Save Notes</button>
-        </div>
+        <!-- Login Form -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">Username</label>
+                <input type="text" id="loginUsername" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn" id="loginBtn">Login</button>
+            <div class="toggle-form">
+                <span>Don't have an account? </span>
+                <a id="showRegister">Register here</a>
+            </div>
+        </form>
 
-        <div id="results"></div>
+        <!-- Register Form (hidden by default) -->
+        <form id="registerForm" class="hidden">
+            <div class="form-group">
+                <label for="registerName">Full Name</label>
+                <input type="text" id="registerName" required>
+            </div>
+            <div class="form-group">
+                <label for="registerUsername">Username</label>
+                <input type="text" id="registerUsername" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Password</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit" class="btn" id="registerBtn">Register</button>
+            <div class="toggle-form">
+                <span>Already have an account? </span>
+                <a id="showLogin">Login here</a>
+            </div>
+        </form>
     </div>
+
     <script src="sidepanel.js"></script>
 </body>
 </html>

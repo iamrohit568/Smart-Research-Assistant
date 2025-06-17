@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ResearchAssistantApplication<research-assistant>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.reseach.assistant.ResearchAssistantApplication",
+            "projectName": "research-assistant",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
