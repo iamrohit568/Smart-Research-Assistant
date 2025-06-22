@@ -2,57 +2,187 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research Assistant</title>
     <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-    <!-- Login Screen (only this is shown at startup) -->
+    <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
-        <div class="logo">
-            <h1>🔬 Research Assistant</h1>
-            <p>AI-powered research made simple</p>
+        <div class="login-card fade-in-up">
+            <div class="logo">
+                <h1>🔬 Research Assistant</h1>
+                <p>AI-powered research made simple</p>
+            </div>
+
+            <div class="alert" id="loginAlert"></div>
+            <div class="loading" id="loginLoading"></div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn" id="loginBtn">Sign In</button>
+                <div class="toggle-form">
+                    <span>Don't have an account? </span>
+                    <a id="showRegister">Create one</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="registerName">Full Name</label>
+                    <input type="text" id="registerName" required autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn" id="registerBtn">Create Account</button>
+                <div class="toggle-form">
+                    <span>Already have an account? </span>
+                    <a id="showLogin">Sign in</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="main-app hidden" id="mainApp">
+        <div class="app-header">
+            <div class="header-content">
+                <div class="app-title">Research Assistant</div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span id="welcomeMessage">Welcome!</span>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+            </div>
         </div>
 
-        <div class="alert" id="loginAlert"></div>
-        <div class="loading" id="loginLoading"></div>
+        <div class="app-content">
+            <div class="action-grid">
+                <div class="action-card primary" id="summarizeCard">
+                    <div class="action-icon">📝</div>
+                    <div class="action-title">Quick Summarize</div>
+                    <div class="action-description">Summarize selected text from any webpage instantly</div>
+                </div>
 
-        <!-- Login Form -->
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="loginUsername">Username</label>
-                <input type="text" id="loginUsername" required>
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" required>
-            </div>
-            <button type="submit" class="btn" id="loginBtn">Login</button>
-            <div class="toggle-form">
-                <span>Don't have an account? </span>
-                <a id="showRegister">Register here</a>
-            </div>
-        </form>
+                <div class="action-card accent" id="similarCard">
+                    <div class="action-icon">🔍</div>
+                    <div class="action-title">Find Similar Research</div>
+                    <div class="action-description">Discover related academic papers and research topics</div>
+                </div>
 
-        <!-- Register Form (hidden by default) -->
-        <form id="registerForm" class="hidden">
-            <div class="form-group">
-                <label for="registerName">Full Name</label>
-                <input type="text" id="registerName" required>
+                <div class="action-card warning" id="researchHereCard">
+                    <div class="action-icon">🚀</div>
+                    <div class="action-title">Work Station</div>
+                    <div class="action-description">Upload PDFs, audio files for AI-powered analysis</div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="registerUsername">Username</label>
-                <input type="text" id="registerUsername" required>
+
+            <div class="notes-section">
+                <div class="section-title">
+                    <span>📋</span>
+                    Research Notes
+                </div>
+                <textarea class="notes-textarea" id="notes" placeholder="Take your research notes here..."></textarea>
+                <button class="save-btn" id="saveNotesBtn">Save Notes</button>
             </div>
-            <div class="form-group">
-                <label for="registerPassword">Password</label>
-                <input type="password" id="registerPassword" required>
+
+            <div class="results-section" id="results">
+                <div class="section-title">
+                    <span>✨</span>
+                    Results
+                </div>
+                <div id="resultsContent"></div>
             </div>
-            <button type="submit" class="btn" id="registerBtn">Register</button>
-            <div class="toggle-form">
-                <span>Already have an account? </span>
-                <a id="showLogin">Login here</a>
+        </div>
+    </div>
+
+    <!-- Research Page -->
+    <div class="research-page" id="researchPage">
+        <div class="research-header">
+            <button class="back-btn" id="backBtn">←</button>
+            <div>
+                <div style="font-size: 1.25rem; font-weight: 700;">Multi-Modal Research</div>
+                <div style="font-size: 0.875rem; opacity: 0.9;">Upload and analyze your research materials</div>
             </div>
-        </form>
+        </div>
+
+        <div class="research-tools">
+            <button class="research-btn" id="historyBtn">Research History</button>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card" id="uploadCard">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drop files here or click to browse</div>
+                <div class="upload-subtext">Supports PDF, Images (JPG, PNG), Audio (MP3, WAV, M4A)</div>
+                <input type="file" class="file-input" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.mp3,.wav,.m4a">
+                <button class="upload-btn" id="browseBtn">Browse Files</button>
+                <select class="operation-select" id="operationSelect">
+                    <option value="summarize">📝 Summarize Content</option>
+                    <option value="extract_formulas">📏 Extract Formulas</option>
+                    <option value="transcribe">🎵 Transcribe Audio</option>
+                    <option value="analyze">🔍 Detailed Analysis</option>
+                </select>
+            </div>
+            <div class="status-indicator" id="uploadStatus"></div>
+        </div>
+
+        <div class="research-content">
+            <div class="results-section show" id="researchResults">
+                <div class="section-title">
+                    <span>📊</span>
+                    Analysis Results
+                </div>
+                <div id="researchResultsContent">
+                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        Upload a file to see analysis results here
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Page -->
+    <div class="history-page" id="historyPage">
+        <div class="research-header">
+            <button class="back-btn" id="backFromHistoryBtn">←</button>
+            <div>
+                <div style="font-size: 1.25rem; font-weight: 700;">Research History</div>
+                <div style="font-size: 0.875rem; opacity: 0.9;">Your previously analyzed files</div>
+            </div>
+        </div>
+
+        <div class="research-tools">
+            <input type="text" class="search-input" id="historySearch" placeholder="Search your history...">
+            <button class="research-btn danger" id="clearAllBtn">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 5.883 16h4.234a2 2 0 0 0 1.992-1.84L12.962 3.5H13.5a.5.5 0 0 0 0-1H11Z"/>
+                </svg>
+                Clear All
+            </button>
+        </div>
+        
+
+        <div class="history-content">
+            <div id="historyResults">
+                <!-- History items will be loaded here -->
+            </div>
+        </div>
     </div>
 
     <script src="sidepanel.js"></script>
