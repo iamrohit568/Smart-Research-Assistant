@@ -219,5 +219,46 @@ public class FileUploadController {
         }
     }
 
+    @PostMapping("/chat/{id}")
+    public ResponseEntity<Map<String, Object>> chatWithPdf(
+            @PathVariable Long id,
+            @RequestParam("question") String question,
+            @RequestHeader("X-User-ID") Integer userId) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Verify the analysis exists and belongs to the user
+            Optional<FileAnalysis> analysis = fileAnalysisRepository.findByIdAndUserId(id, userId);
+
+            if (!analysis.isPresent()) {
+                response.put("success", false);
+                response.put("message", "Analysis not found or doesn't belong to user");
+                return ResponseEntity.status(404).body(response);
+            }
+
+            // Get the extracted content
+            String extractedContent = analysis.get().getExtractedContent();
+
+            if (extractedContent == null || extractedContent.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "No content available for this file");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Process the question with the PDF content
+            String answer = multiModalService.chatWithPdf(extractedContent, question);
+
+            response.put("success", true);
+            response.put("answer", answer);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to process question: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
 
 }

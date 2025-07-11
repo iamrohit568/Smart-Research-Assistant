@@ -385,11 +385,11 @@ async function handleFileUpload() {
         showResearchResult('❌ Please log in first', 'error');
         return;
     }
-    
+
     const fileInput = document.getElementById('fileInput');
     const operation = document.getElementById('operationSelect').value;
     const statusEl = document.getElementById('uploadStatus');
-    
+
     if (!fileInput.files.length) {
         showResearchResult('⚠️ Please select a file first', 'warning');
         return;
@@ -407,14 +407,21 @@ async function handleFileUpload() {
 
         const response = await fetch(`${FILES_API_URL}/upload`, {
             method: 'POST',
-            headers: { 'X-User-ID': currentUser.id },
+            headers: {
+                'X-User-ID': currentUser.id
+            },
             body: formData,
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
-            showResearchResult(`✅ <strong>${file.name}</strong> processed successfully:<br><br>${result.result}`, 'success');
+            showResearchResult(
+                `✅ <strong>${file.name}</strong> processed successfully:<br><br>${result.result}`,
+                'success',
+                result.fileId, // pass fileId
+                file.name       // pass fileName
+            );
             statusEl.textContent = '✔️ Processing complete!';
             statusEl.className = 'status-indicator success';
         } else {
@@ -429,15 +436,32 @@ async function handleFileUpload() {
     }
 }
 
-function showResearchResult(content, type = 'info') {
+
+function showResearchResult(content, type = 'info', fileId = null, fileName = '') {
     const contentEl = document.getElementById('researchResultsContent');
     const rendered = window.marked ? marked.parse(content) : content;
+
     contentEl.innerHTML = `
         <div class="result-item">
             <div class="result-content">${rendered}</div>
+            <div class="result-actions">
+                <button class="action-btn chat-btn" id="chatWithPdfBtn" ${fileId ? '' : 'disabled'}>
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6-.097 1.016-.417 2.13-.771 2.966-.079.186.074.394.273.362 2.256-.37 3.597-.938 4.18-1.234A9.06 9.06 0 0 0 8 15z"/>
+                    </svg>
+                    Chat with this PDF
+                </button>
+                <button class="clear-btn" id="clearResearchResultsBtn">Clear Results</button>
+            </div>
         </div>
-        <button class="clear-btn" id="clearResearchResultsBtn">Clear Results</button>
     `;
+
+    if (fileId) {
+        const chatBtn = document.getElementById('chatWithPdfBtn');
+        chatBtn.addEventListener('click', () => {
+            showPdfChatModal(fileId, fileName);
+        });
+    }
 
     document.getElementById('clearResearchResultsBtn').addEventListener('click', () => {
         contentEl.innerHTML = `
@@ -447,6 +471,7 @@ function showResearchResult(content, type = 'info') {
         `;
     });
 }
+
 
 // History Page Functions
 function showHistoryPage() {
@@ -550,7 +575,6 @@ function toggleHistoryDetails(row) {
 }
 
 function showFullResult(id, result, filename) {
-    // Decode HTML entities if they exist
     const decodedResult = result ? result.replace(/&quot;/g, '"') : 'No result available';
     
     const modal = document.createElement('div');
@@ -562,7 +586,24 @@ function showFullResult(id, result, filename) {
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="result-text">${decodedResult || 'No result available'}</div>
+                <div class="result-tabs">
+                    <button class="tab-btn active" data-tab="result">Result</button>
+                    <button class="tab-btn" data-tab="chat">Chat with PDF</button>
+                </div>
+                
+                <div class="tab-content active" id="resultTab">
+                    <div class="result-text">${decodedResult || 'No result available'}</div>
+                </div>
+                
+                <div class="tab-content" id="chatTab">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="chatQuestion" placeholder="Ask a question about this PDF...">
+                            <button id="sendQuestionBtn">Ask</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn primary" id="downloadFromModalBtn">Download</button>
@@ -571,6 +612,64 @@ function showFullResult(id, result, filename) {
     `;
     
     document.body.appendChild(modal);
+    
+    // Tab switching
+    modal.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(`${btn.dataset.tab}Tab`).classList.add('active');
+        });
+    });
+    
+    // Chat functionality
+    const chatMessages = modal.querySelector('#chatMessages');
+    const chatQuestion = modal.querySelector('#chatQuestion');
+    const sendQuestionBtn = modal.querySelector('#sendQuestionBtn');
+    
+    sendQuestionBtn.addEventListener('click', async () => {
+        const question = chatQuestion.value.trim();
+        if (!question) return;
+        
+        // Add user question to chat
+        chatMessages.innerHTML += `
+            <div class="message user">
+                <div class="message-content">${question}</div>
+            </div>
+        `;
+        
+        chatQuestion.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Show loading indicator
+        chatMessages.innerHTML += `
+            <div class="message assistant loading">
+                <div class="message-content">Thinking...</div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Get answer from backend
+        const answer = await chatWithPdf(id, question);
+        
+        // Remove loading indicator and add answer
+        document.querySelector('.message.assistant.loading')?.remove();
+        chatMessages.innerHTML += `
+            <div class="message assistant">
+                <div class="message-content">${answer.replace(/\n/g, '<br>')}</div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+    
+    // Allow pressing Enter to send question
+    chatQuestion.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendQuestionBtn.click();
+        }
+    });
     
     // Close modal when clicking X or outside
     modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
@@ -674,4 +773,114 @@ async function clearAllHistory() {
     } catch (err) {
         showHistoryAlert('Network error. Please try again.', 'error');
     }
+}
+
+async function chatWithPdf(id, question) {
+    if (!currentUser) {
+        showResearchResult('❌ Please log in first', 'error');
+        return;
+    }
+
+    if (!question || question.trim() === '') {
+        showResearchResult('⚠️ Please enter a question', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${FILES_API_URL}/chat/${id}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-User-ID': currentUser.id 
+            },
+            body: `question=${encodeURIComponent(question)}`
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.answer;
+        } else {
+            return `Error: ${data.message}`;
+        }
+    } catch (err) {
+        return `Network error: ${err.message}`;
+    }
+}
+
+function showPdfChatModal(fileId, fileName) {
+    const modal = document.createElement('div');
+    modal.className = 'result-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Chat with ${fileName}</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chatQuestion" placeholder="Ask a question about this PDF...">
+                        <button id="sendQuestionBtn">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Chat functionality
+    const chatMessages = modal.querySelector('#chatMessages');
+    const chatQuestion = modal.querySelector('#chatQuestion');
+    const sendQuestionBtn = modal.querySelector('#sendQuestionBtn');
+    
+    sendQuestionBtn.addEventListener('click', async () => {
+        const question = chatQuestion.value.trim();
+        if (!question) return;
+        
+        // Add user question to chat
+        chatMessages.innerHTML += `
+            <div class="message user">
+                <div class="message-content">${question}</div>
+            </div>
+        `;
+        
+        chatQuestion.value = '';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Show loading indicator
+        chatMessages.innerHTML += `
+            <div class="message assistant loading">
+                <div class="message-content">Thinking...</div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Get answer from backend
+        const answer = await chatWithPdf(fileId, question);
+        
+        // Remove loading indicator and add answer
+        document.querySelector('.message.assistant.loading')?.remove();
+        chatMessages.innerHTML += `
+            <div class="message assistant">
+                <div class="message-content">${answer.replace(/\n/g, '<br>')}</div>
+            </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+    
+    // Allow pressing Enter to send question
+    chatQuestion.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendQuestionBtn.click();
+        }
+    });
+    
+    // Close modal when clicking X or outside
+    modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
 }

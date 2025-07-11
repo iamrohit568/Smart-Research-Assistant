@@ -354,4 +354,40 @@ public class MultiModalService {
     public List<FileAnalysis> searchFileHistory(Integer userId, String query) {
         return fileAnalysisRepository.searchByUserIdAndFileName(userId, query);
     }
+
+    public String chatWithPdf(String pdfContent, String question) {
+        // Build a prompt that includes the PDF content and the question
+        String prompt = buildChatPrompt(pdfContent, question);
+
+        Map<String, Object> requestBody = Map.of("contents", List.of(
+                Map.of("parts", List.of(
+                        Map.of("text", prompt)
+                ))
+        ));
+
+        try {
+            String response = webClient.post()
+                    .uri(geminiApiUrl + geminiApiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            return extractTextFromGeminiResponse(response);
+        } catch (Exception e) {
+            return "Chat failed: " + e.getMessage();
+        }
+    }
+
+    private String buildChatPrompt(String pdfContent, String question) {
+        return "You are an AI assistant that answers questions about PDF documents. " +
+                "Answer the following question based on the provided PDF content:\n\n" +
+                "Question: " + question + "\n\n" +
+                "PDF Content:\n```\n" + pdfContent + "\n```\n\n" +
+                "Instructions:\n" +
+                "- Answer concisely but thoroughly\n" +
+                "- If the answer isn't in the PDF, say 'The PDF doesn't contain information about this'\n" +
+                "- Format your answer clearly with markdown if needed\n" +
+                "- Provide page numbers or sections if possible";
+    }
 }
